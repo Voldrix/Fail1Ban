@@ -1,6 +1,5 @@
 #define _GNU_SOURCE //gettid()
 #include <stdlib.h>
-#include <stdio.h>
 #include <dirent.h>
 #include <string.h>
 #include <fcntl.h>
@@ -127,7 +126,7 @@ void* nginx_log(void* x) {
     if(bytesRead <= 0)
       continue;
     nbuff[bytesRead] = 0;
-printf("nginx\n%s\n", nbuff);
+
     nginx_fw();
   }
 
@@ -149,7 +148,7 @@ void* ssh_log(void* x) {
     if(bytesRead <= 0)
       continue;
     sbuff[bytesRead] = 0;
-printf("ssh\n%s\n", sbuff);
+
     ssh_fw();
   }
 
@@ -160,7 +159,7 @@ printf("ssh\n%s\n", sbuff);
 
 
 int main(void) {
-  //daemon(0, 0);
+  daemon(0, 0);
 
   f1b_procfs = open(F1B_PROCFS, O_WRONLY);
   if(f1b_procfs < 1)
