@@ -1,5 +1,6 @@
 #define _GNU_SOURCE //gettid()
 #include <stdlib.h>
+#include <stdio.h>
 #include <dirent.h>
 #include <string.h>
 #include <fcntl.h>
@@ -67,21 +68,18 @@ void nginx_fw(void) {
     //rule 444 && rule 400
     if(ptr[2] == '4' || (ptr[1] == '4' && ptr[3] == '0')) {
       ban_ip(ip);
-      continue;
     }
 
     //rule 404
     if(ptr[1] == '4' && ptr[3] == '4') {
       if(warning_check(ip))
         ban_ip(ip);
-      continue;
     }
 
     //rule 301
     if(ptr[1] == '3' && ptr[3] == '1') {
       if(warning_check(ip))
         ban_ip(ip);
-      continue;
     }
 
     //passed all rules
@@ -129,7 +127,7 @@ void* nginx_log(void* x) {
     if(bytesRead <= 0)
       continue;
     nbuff[bytesRead] = 0;
-
+printf("nginx\n%s\n", nbuff);
     nginx_fw();
   }
 
@@ -151,7 +149,7 @@ void* ssh_log(void* x) {
     if(bytesRead <= 0)
       continue;
     sbuff[bytesRead] = 0;
-
+printf("ssh\n%s\n", sbuff);
     ssh_fw();
   }
 
@@ -162,7 +160,7 @@ void* ssh_log(void* x) {
 
 
 int main(void) {
-  daemon(0, 0);
+  //daemon(0, 0);
 
   f1b_procfs = open(F1B_PROCFS, O_WRONLY);
   if(f1b_procfs < 1)
