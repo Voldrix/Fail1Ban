@@ -1,9 +1,5 @@
-#define _GNU_SOURCE //gettid()
-#include <stdlib.h>
-#include <dirent.h>
-#include <string.h>
-#include <fcntl.h>
 #include <unistd.h>
+#include <fcntl.h> //open
 #include <sys/file.h>
 #include <sys/stat.h> //mkfifo
 #include <pthread.h>
