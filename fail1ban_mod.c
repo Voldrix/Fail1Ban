@@ -9,7 +9,7 @@
 #include <linux/netlink.h>
 #include "ip_str_convert.c"
 
-#define BANNED_IP_MAX 16 //must be power of 2, for line 162
+#define BANNED_IP_MAX 16 //must be power of 2, for line 97
 #define PROCFS_MAX_SIZE 32
 #define PROCFS_NAME "fail1ban"
 

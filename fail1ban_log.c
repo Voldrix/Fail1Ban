@@ -13,7 +13,7 @@
 #define SSH_PIPE "/run/fail1ban-ssh"
 #define F1B_PROCFS "/proc/fail1ban"
 #define BUFFER_SIZE 1024
-#define RECENT_WARNINGS 16 //power of 2 (for line 42)
+#define RECENT_WARNINGS 16 //power of 2 (for line 43)
 
 int f1b_procfs, warning_tail = 0;
 char nbuff[BUFFER_SIZE];
@@ -72,9 +72,8 @@ void nginx_fw(void) {
 
     //rule 404
     if(ptr[1] == '4' && ptr[3] == '4') {
-      if(*ptr == 's' || *ptr == 'o' || *ptr == 'f' || *ptr == 'e' || *ptr == 'p')
-        if(warning_check(ip))
-          ban_ip(ip);
+      if(warning_check(ip))
+        ban_ip(ip);
       continue;
     }
 
