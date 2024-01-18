@@ -89,7 +89,9 @@ void ssh_fw(void) {
   char *ip;
 
   while(*ptr) {
-    ptr += 57;
+    while(*ptr != ']') //skip past datestamp to actual msg
+      ptr += 1;
+    ptr += 3;
     if(*ptr != 'A') { //auth fail
       while(*ptr && *ptr != '\n' && (*ptr > '9' || *ptr < '1')) //find ipv4 in current line
         ptr += 1;
