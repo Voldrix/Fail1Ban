@@ -92,7 +92,7 @@ void ssh_fw(void) {
     while(*ptr != ']') //skip past datestamp to actual msg
       ptr += 1;
     ptr += 3;
-    if(*ptr != 'A') { //auth fail
+    if(*ptr != 'A' && *ptr != 'R' && *ptr != 'D') { //auth fail
       while(*ptr && *ptr != '\n' && (*ptr > '9' || *ptr < '1')) //find ipv4 in current line
         ptr += 1;
       if(*ptr && *ptr != '\n' && (ptr[6] == '.' || (ptr[6] >= '0' && ptr[6] <= '9'))) { //confirm it is an ipv4
