@@ -9,7 +9,7 @@
 #include <linux/netlink.h>
 #include "ip_str_convert.c"
 
-#define BANNED_IP_MAX 16 //must be power of 2, for line 97
+#define BANNED_IP_MAX 16 //must be power of 2, for line 95
 #define PROCFS_MAX_SIZE 32
 #define PROCFS_NAME "fail1ban"
 
@@ -49,9 +49,6 @@ static ssize_t procfile_read(struct file *file_pointer, char __user *buffer, siz
   unsigned int len, err, written = 0;
   readPos = (*offset) ? readPos : 0; //reading first chunk?
 
-  if(buffer_length < 16)
-    return 0;
-
   for( ; readPos < 256; readPos++) {
     for(int pos = 0; pos < BANNED_IP_MAX; pos++) {
       if(!banned_ip[readPos][pos])
@@ -74,7 +71,7 @@ static ssize_t procfile_read(struct file *file_pointer, char __user *buffer, siz
 //WRITE PROC
 static ssize_t procfile_write(struct file *file, const char __user *buff, size_t len, loff_t *off) {
 
-  //we could read in chunks, but we don't allow long msgs.
+  //don't allow long msgs. only 1 IP per msg
   if(len >= PROCFS_MAX_SIZE)
     return -EMSGSIZE;
 
@@ -88,8 +85,9 @@ static ssize_t procfile_write(struct file *file, const char __user *buff, size_t
   else { //ban ip
     unsigned int ip = str_to_ip(procfs_buffer);
     unsigned int idx = ip & 255; //first octet in little-endian order
-    //check if ban already exists
     register int preexisting = 0;
+
+    //check if ban already exists
     for(int i = 0; i < BANNED_IP_MAX; i++)
       preexisting += (banned_ip[idx][i] == ip);
     if(!preexisting) {
