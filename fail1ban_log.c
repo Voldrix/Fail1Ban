@@ -9,7 +9,7 @@
 #define SSH_PIPE "/run/fail1ban-ssh"
 #define F1B_PROCFS "/proc/fail1ban"
 #define BUFFER_SIZE 1024
-#define RECENT_WARNINGS 16 //power of 2 (for line 43)
+#define RECENT_WARNINGS 16 //power of 2 (for line 39)
 
 int f1b_procfs, warning_tail = 0;
 char nbuff[BUFFER_SIZE];
@@ -39,7 +39,7 @@ int warning_check(char *ip_str) {
     warning_tail &= RECENT_WARNINGS - 1;
   }
 
-  return (warn == 2); //ban if 2 warning exist
+  return (warn == 2); //ban if 2 warnings exist
 }
 
 
@@ -65,14 +65,8 @@ void nginx_fw(void) {
       ban_ip(ip);
     }
 
-    //rule 404
-    if(ptr[1] == '4' && ptr[3] == '4') {
-      if(warning_check(ip))
-        ban_ip(ip);
-    }
-
-    //rule 301
-    if(ptr[1] == '3' && ptr[3] == '1') {
+    //rule 404 && 301
+    if((ptr[1] == '4' && ptr[3] == '4') || (ptr[1] == '3' && ptr[3] == '1')) {
       if(warning_check(ip))
         ban_ip(ip);
     }
@@ -98,10 +92,10 @@ void ssh_fw(void) {
       if(*ptr && *ptr != '\n' && (ptr[6] == '.' || (ptr[6] >= '0' && ptr[6] <= '9'))) { //confirm it is an ipv4
         ip = ptr;
         ptr += 7; //min ipv4 length
-        while(*ptr && *ptr != ' ' && *ptr != '\n')
+        while(*ptr && *ptr != ' ' && *ptr != '\n') //find end of ip str
           ptr += 1;
         *ptr++ = 0; //null term ip str
-        ban_ip(ip); //ban
+        ban_ip(ip);
       }
     }
     while(*ptr && *ptr != '\n') //next line or EOF
@@ -163,9 +157,8 @@ int main(void) {
   if(f1b_procfs < 1)
     return 1;
 
-  pthread_t nginx_thread;
+  pthread_t nginx_thread, ssh_thread;
   pthread_create(&nginx_thread, NULL, &nginx_log, NULL);
-  pthread_t ssh_thread;
   pthread_create(&ssh_thread, NULL, &ssh_log, NULL);
 
   while(1) pause();

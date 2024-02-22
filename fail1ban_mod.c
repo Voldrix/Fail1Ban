@@ -24,10 +24,10 @@ static struct nf_hook_ops hook_ops;
 //FILTER HOOK
 static int vs_filter(void *priv, struct sk_buff *skb, const struct nf_hook_state *state) {
 
-  struct iphdr *iph = ip_hdr(skb);
-  register int ret = 0, idx = iph->saddr & 255;
+  struct iphdr *iph = ip_hdr(skb); //header of tcp buf
+  register int ret = 0, idx = iph->saddr & 255; //first octect (for blacklist idx)
 
-  for(int i = 0; i < BANNED_IP_MAX; i++)
+  for(int i = 0; i < BANNED_IP_MAX; i++) //check if ip is in blacklist
     ret += (iph->saddr == banned_ip[idx][i]);
 
   return ret ? NF_DROP : NF_ACCEPT;
@@ -47,10 +47,10 @@ static inline void clear_bans(void) {
 static ssize_t procfile_read(struct file *file_pointer, char __user *buffer, size_t buffer_length, loff_t *offset) {
 
   unsigned int len, err, written = 0;
-  readPos = (*offset) ? readPos : 0; //reading first chunk?
+  readPos = (*offset) ? readPos : 0; //0 if reading first chunk, else rembemer where we left off
 
   for( ; readPos < 256; readPos++) {
-    for(int pos = 0; pos < BANNED_IP_MAX; pos++) {
+    for(int pos = 0; pos < BANNED_IP_MAX; pos++) { //read all bans starting with octect `readPos`
       if(!banned_ip[readPos][pos])
         break;
       len = ip_to_str(banned_ip[readPos][pos], outBuff);
@@ -84,7 +84,7 @@ static ssize_t procfile_write(struct file *file, const char __user *buff, size_t
     clear_bans();
   else { //ban ip
     unsigned int ip = str_to_ip(procfs_buffer);
-    unsigned int idx = ip & 255; //first octet in little-endian order
+    unsigned int idx = ip & 255; //first octet in little-endian order (for blacklist idx)
     register int preexisting = 0;
 
     //check if ban already exists
@@ -129,7 +129,7 @@ static int __init init_mod(void) {
     return -ENOMEM;
   }
 
-  clear_bans();
+  clear_bans(); //zero/init mem
 
   return 0;
 }
