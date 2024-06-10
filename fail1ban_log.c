@@ -45,7 +45,7 @@ int warning_check(char *ip_str) {
 
 
 void nginx_fw(void) {
-  char *ip, *ip_end, *ptr = nbuff;
+  char *ip, *ip_end, *ptr = nbuff, ipv6;
 
   while(*ptr) {
     //find start of log line
@@ -60,13 +60,19 @@ void nginx_fw(void) {
       ip_end += 1;
     *ip_end++ = 0; //null term ip str
 
+    ipv6 = (ip_end - ip > 18); //ignore ipv6
+    if(ipv6) {
+      ptr = ip_end;
+      continue;
+    }
+
     //rule 444 && rule 400
     if(ptr[2] == '4' || (ptr[1] == '4' && ptr[3] == '0')) {
       ban_ip(ip);
     }
 
     //rule 404 && 301
-    if((ptr[1] == '4' && ptr[3] == '4') || (ptr[1] == '3' && ptr[3] == '1')) {
+    if((ptr[1] == '4' && ptr[2] == '0' && ptr[3] == '4') || (ptr[1] == '3' && ptr[3] == '1')) {
       if(warning_check(ip))
         ban_ip(ip);
     }
