@@ -9,17 +9,32 @@
 #define SSH_PIPE "/run/fail1ban-ssh"
 #define F1B_PROCFS "/proc/fail1ban"
 #define BUFFER_SIZE 1024
-#define RECENT_WARNINGS 16 //power of 2 (for line 39)
+#define RECENT_WARNINGS 16 //power of 2
+
+#define WHITELIST_SERVER_IP "0.0.0.0"
+#define WHITELIST_MY_IP "0.0.0.0"
+
 
 int f1b_procfs, warning_tail = 0;
-char nbuff[BUFFER_SIZE];
-char sbuff[BUFFER_SIZE];
+char nbuff[BUFFER_SIZE], sbuff[BUFFER_SIZE], lastIP[16] = {0};
 unsigned int warnings[RECENT_WARNINGS];
 
 
+inline int strIdent(register char *s1, register char *s2) {
+  while(*s1 == *s2 && *s1 && *s2) {
+    s1 += 1;
+    s2 += 1;
+  }
+  return (*s1 | *s2); // 0 = identical
+}
 
-void ban_ip(char *ip) {
-  write(f1b_procfs, ip, 15);
+
+
+void ban_ip(char *ip_str) {
+  if(strIdent(ip_str, "127.0.0.1") && strIdent(ip_str, WHITELIST_MY_IP) && strIdent(ip_str, lastIP)) {
+    write(f1b_procfs, ip_str, 15);
+    strcpy(lastIP, ip_str);
+  }
 }
 
 
@@ -61,7 +76,7 @@ void nginx_fw(void) {
     *ip_end++ = 0; //null term ip str
 
     ipv6 = (ip_end - ip > 18); //ignore ipv6
-    if(ipv6) {
+    if(ipv6 || !strIdent(ip, WHITELIST_SERVER_IP)) {
       ptr = ip_end;
       continue;
     }
@@ -89,7 +104,7 @@ void ssh_fw(void) {
   char *ip;
 
   while(*ptr) {
-    while(*ptr != ']') //skip past datestamp to actual msg
+    while(*ptr && *ptr != ']') //skip past datestamp to actual msg
       ptr += 1;
     ptr += 3;
     if(*ptr != 'A' && *ptr != 'R' && *ptr != 'D') { //auth fail
@@ -101,7 +116,8 @@ void ssh_fw(void) {
         while(*ptr && *ptr != ' ' && *ptr != '\n') //find end of ip str
           ptr += 1;
         *ptr++ = 0; //null term ip str
-        ban_ip(ip);
+        if(strIdent(ip, WHITELIST_SERVER_IP))
+          ban_ip(ip);
       }
     }
     while(*ptr && *ptr != '\n') //next line or EOF
