@@ -153,9 +153,9 @@ void ssh_fw(void) {
         ptr += 7; //min ipv4 length
         while(*ptr && *ptr != ' ' && *ptr != '\n')
           ptr += 1;
-        ptr[1] = (*ptr == 0) ? 0 : ptr[1];
-        *ptr++ = 0; //null term ip str
-        if(strIdent(ip, WHITELIST_SERVER_IP))
+        ptr[1] = (*ptr == 0) ? 0 : ptr[1]; //dup null term if this is the last line, to break loop. so we can insert line term
+        *ptr++ = 0; //insert line term. ip str
+        if(ptr - ip < 17 && strIdent(ip, WHITELIST_SERVER_IP))
           ban_ip(ip); //ban
       }
     }
@@ -197,7 +197,7 @@ void* ssh_log(void* x) {
   fd = open(SSH_PIPE, O_RDONLY);
 
   while(1) {
-    bytesRead = read(fd, sbuff, sizeof(sbuff) - 1);
+    bytesRead = read(fd, sbuff, sizeof(sbuff) - 2);
     if(bytesRead <= 0)
       continue;
     sbuff[bytesRead] = 0;
