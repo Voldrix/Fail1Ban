@@ -48,7 +48,7 @@ auth,authpriv.*               |/run/fail1ban-ssh
 ```
 
 ## Build
-Set whitelist IP macros for server and admin client to prevent lockout.\
+Set whitelist IP macros for server and admin client in `config.h` to prevent lockout.\
 `make` will build the kernel module and the log parser (`make mod` + `make log`). `make cf` for Cloudflare version.\
 Install the kernel module with `modprobe ./fail1ban_mod.ko`\
 Run the parser daemon `./fail1ban_log` before restarting nginx and rsyslog.
@@ -56,17 +56,19 @@ Run the parser daemon `./fail1ban_log` before restarting nginx and rsyslog.
 Once the named pipes have been created the first time, you can stop and restart the log daemon without restarting nginx and rsyslog. They will automatically start sending logs again.
 
 ## Cloudflare
-The `fail1ban_log_cloudflare.c` log parser works with a mixture of domains both on and off of Cloudflare.
+The Cloudflare log parser works with a mixture of domains both on and off of Cloudflare.
 
 __Requirements__\
 SSL relay.\
 Cloudflare [list](https://developers.cloudflare.com/waf/tools/lists/custom-lists/). Block the list in the WAF.
 
 __Setup__\
-Set your SSL relay hostname (line 20)\
-Whitelist your own IP address, just in case (lines 21-22)\
-Rewrite lines 109 and 118 to uniquely identify domain names on Cloudflare\
-Update the Cloudflare API request on line 221 with: account ID, list ID, ssl relay hostname, account email, api key
+Make a local `config.h` copy `config.local.h` so it doesn't get overwritten.
+
+Set `config.local.h` macros for:\
+Your SSL relay hostname, Whitelist your own IP address (just in case), Cloudflare account ID, list ID, account email, api key.\
+
+Rewrite lines 107 and 118 to uniquely identify domain names that use Cloudflare.
 
 Nginx SSL relay:
 ```
@@ -86,11 +88,11 @@ server {
 
 ### ToDo
 - IPv6
-- unban individual ip
-- Generalize ssh ban triggers
-- Generalize domain name separation
+- Unban individual IP
+- Generalize SSH ban triggers
 - CF API request failsafe
 - Allow newline IP string termination
+- Abstract Cloudflare domain name ident to config.h
 
 ### License
 [MIT](LICENSE)
