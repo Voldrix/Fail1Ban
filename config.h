@@ -1,5 +1,7 @@
-//must match PROCFS_NAME in fail1ban_mod.c
-#define F1B_PROCFS "/proc/fail1ban"
+//for kernel module
+#define BANNED_IP_MAX 16 //power of 2
+#define PROCFS_MAX_SIZE 32
+#define PROCFS_NAME "fail1ban"
 
 //for both log parsers
 #define NGINX_PIPE "/run/fail1ban-nginx"
@@ -18,4 +20,7 @@
 #define CF_ACCOUNT_ID "0000"
 #define CF_LIST_ID "0000"
 #define CF_API_KEY "0000"
+
+#define CF_NUM_HOSTS 2
+#define CF_HOSTS {"example.com", "example.org"}
 

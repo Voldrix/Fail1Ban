@@ -9,9 +9,11 @@
 #include <linux/netlink.h>
 #include "ip_str_convert.c"
 
-#define BANNED_IP_MAX 16 //must be power of 2, for line 95
-#define PROCFS_MAX_SIZE 32
-#define PROCFS_NAME "fail1ban"
+#if __has_include("config.local.h")
+  #include "config.local.h"
+#else
+  #include "config.h"
+#endif
 
 static unsigned char ban_tail[256];
 static unsigned int readPos, banned_ip[256][BANNED_IP_MAX];
