@@ -19,39 +19,41 @@ cat /proc/fail1ban
 Linux can run multiple firewalls simultaneously, so you don't need to disable IPtables / etc.
 
 ### Log Parser Auto-Banner
-Accepts logs directly from OpenSSH and Nginx via two named pipes (fifo), `/run/fail1ban-nginx` and `/run/fail1ban-ssh`\
+Accepts logs directly from OpenSSH and Nginx via two named pipes (fifo), `/run/fail1ban-nginx` and `/run/fail1ban-ssh`
+
 __OpenSSH:__\
-One failure bans immediately.\
+One failure bans immediately.
+
 __Nginx:__\
 By default, there are 4 rules:\
 HTTP 400 and 444 ban immediately.\
-301 and 404 issue two (silent) warnings before banning on the third attempt.\
-Only the last 16 warnings are remembered.
+301 and 404 issue two (silent) warnings before banning on the third attempt.
 
+Only the last 16 warnings are remembered.\
 These rules are very simple, and easy for you to add your own custom tailored to your web logs.
 
 ## Configs
 ### Nginx config
 Nginx can handle named pipes natively, configured the same as normal files.\
-You can have multiple _access_log_  directives to get multiple log files.\
-`/etc/nginx/nginx.conf`
+You can have multiple _access_log_  directives to get multiple log files.
 ```
+# /etc/nginx/nginx.conf
 log_format f1b '~$status $remote_addr#$host';
 access_log /run/fail1ban-nginx f1b buffer=512 flush=50ms;
 ```
 
 ### OpenSSH / Rsyslod Config
-OpenSSH logs to rsyslogd, which can handle pipes natively. Just add the pipe/bar symbol `|` before the fifo's filename.\
-`/etc/rsyslog.conf`
+OpenSSH logs to rsyslogd, which can handle pipes natively. Just add the pipe/bar symbol `|` before the fifo's filename.
 ```
+# /etc/rsyslog.conf
 auth,authpriv.*               |/run/fail1ban-ssh
 ```
 
 ## Build
-Whitelist server and admin client IPs in `config.h` to prevent lockout.\
-`make` will build the kernel module and the log parser (`make mod` + `make log`). `make cf` for Cloudflare version.\
-Install the kernel module with `modprobe ./fail1ban_mod.ko`\
-Run the parser daemon `./fail1ban_log` before restarting nginx and rsyslog.
+- Whitelist server and admin client IPs in `config.h` to prevent lockout
+- `make` builds the kernel module and log parser (`make mod` + `make log`). `make cf` for Cloudflare version
+- Install the kernel module with `modprobe ./fail1ban_mod.ko`
+- Run the parser daemon `./fail1ban_log` before restarting nginx and rsyslog
 
 Once the named pipes have been created the first time, you can stop and restart the log daemon without restarting nginx and rsyslog. They will automatically start sending logs again.
 
@@ -63,11 +65,11 @@ SSL relay.\
 Cloudflare [list](https://developers.cloudflare.com/waf/tools/lists/custom-lists/). Block the list in the WAF.
 
 __Setup__\
-Make a local `config.h` copy `config.local.h` so it doesn't get overwritten (optional).
+Make a local `config.h` copy `config.local.h` so it doesn't get overwritten _(optional)_.
 
 Set `config.local.h` macros for:\
-Your SSL relay hostname, Cloudflare account ID, list ID, account email, api key, and domain names on cloudflare.\
-`make cf`
+Your SSL relay hostname, Cloudflare account ID, list ID, account email, api key, and domain names on Cloudflare.\
+Build: `make cf`
 
 Nginx SSL relay:
 ```
