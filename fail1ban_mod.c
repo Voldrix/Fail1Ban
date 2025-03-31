@@ -80,6 +80,7 @@ static ssize_t procfile_write(struct file *file, const char __user *buff, size_t
   if(copy_from_user(procfs_buffer, buff, len))
     return -EFAULT;
   procfs_buffer[len] = 0; //null terminate str
+  procfs_buffer[len-1] = procfs_buffer[len-1] < '0' ? 0 : procfs_buffer[len-1]; //remove newline
 
   //any str not starting with 0-9 will clear all bans
   if(procfs_buffer[0] < '0' || procfs_buffer[0] > '9')

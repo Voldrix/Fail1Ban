@@ -1,5 +1,5 @@
 //for kernel module
-#define BANNED_IP_MAX 16 //power of 2
+#define BANNED_IP_MAX 16 //per A block (256x this value total). power of 2
 #define PROCFS_MAX_SIZE 32
 #define PROCFS_NAME "fail1ban"
 
