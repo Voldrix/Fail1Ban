@@ -1,22 +1,23 @@
 # Fail1Ban
 __A Linux kernel module firewall and userspace log parser and auto-banner for blocking web bots.__
 
-Instead of reading log files from the filesystem, this uses pipes (fifo) so _Nginx_ and _OpenSSH_ can send their logs directly into the application, for immediate banning action.
+Instead of reading logs from the filesystem, this uses pipes (fifo) so _Nginx_ and _OpenSSH_ can send their logs directly into the application, for faster banning action.
 
 ## How it works
 ### Kernel Module Firewall
+Linux can run multiple firewalls simultaneously, so you don't need to disable IPtables / etc.
+
 Write an IPv4 address to `/proc/fail1ban` and it will be banned.\
 Any application can do this, including from the shell.\
 Any message not starting numerically will clear all bans.
 ```
-echo -n 10.10.10.10 > /proc/fail1ban   #bans ip
-echo clear > /proc/fail1ban            #clears all bans
+echo 10.10.10.10 > /proc/fail1ban   #bans ip
+echo clear > /proc/fail1ban         #clears all bans
 ```
 Reading from `/proc/fail1ban` will list all currently banned IPs.
 ```
 cat /proc/fail1ban
 ```
-Linux can run multiple firewalls simultaneously, so you don't need to disable IPtables / etc.
 
 ### Log Parser Auto-Banner
 Accepts logs directly from OpenSSH and Nginx via two named pipes (fifo), `/run/fail1ban-nginx` and `/run/fail1ban-ssh`
@@ -91,7 +92,6 @@ server {
 - IPv6
 - Unban individual IP
 - Generalize SSH ban triggers
-- Allow newline IP string termination
 
 ### License
 [MIT](LICENSE)
