@@ -32,6 +32,24 @@ inline int strIdent(register char *s1, register char *s2) {
 
 
 
+inline char* strLine(register char *string, register char *substring, int progress) {
+  register char *a, *b;
+
+  while(*string && *string != '\n') {
+    if(*string++ != *substring) continue;
+    a = string;
+    b = substring + 1;
+    while(*a == *b) {
+      a += 1;
+      b += 1;
+      if(*b == 0) return string - 1;
+    }
+  }
+  return progress ? string : NULL;
+}
+
+
+
 void ban_ip(char *ip_str) {
   if(strIdent(ip_str, lastIP) && strIdent(ip_str, "127.0.0.1") && strIdent(ip_str, WHITELIST_SERVER_IP) && strIdent(ip_str, WHITELIST_MY_IP)) {
     write(f1b_procfs, ip_str, 15);
@@ -128,30 +146,41 @@ void nginx_fw(void) {
 
 void ssh_fw(void) {
   register char *ptr = sbuff;
-  char *ip;
 
   while(*ptr) {
-    while(*ptr && *ptr != ']') //skip past datestamp to actual msg
-      ptr += 1;
-    if(*ptr == 0) return;
-    ptr += 3;
-    if(*ptr != 'A' && *ptr != 'R' && *ptr != 'D' && *ptr != 'C') { //auth fail
-      while(*ptr && *ptr != '\n' && (*ptr > '9' || *ptr < '1')) //find ipv4 in current line
+    ptr = strLine(ptr, "sshd", 1);
+    if(*ptr < ' ') goto nextLine; //next line or EOF
+
+    if(strLine(ptr, "Failed", 0) || strLine(ptr, "Invalid", 0)) { //auth failed
+
+      findNumber:
+      while(*ptr && *ptr != '\n' && (*ptr > '9' || *ptr < '1')) //find number in current line
         ptr += 1;
-      if(*ptr && *ptr != '\n' && (ptr[6] == '.' || (ptr[6] >= '0' && ptr[6] <= '9'))) { //confirm it is an ipv4
-        ip = ptr;
-        ptr += 7; //min ipv4 length
-        while(*ptr && *ptr != ' ' && *ptr != '\n')
-          ptr += 1;
-        ptr[1] = (*ptr == 0) ? 0 : ptr[1]; //dup null term if this is the last line, to break loop. so we can insert line term
-        *ptr++ = 0; //insert line term. ip str
-        if(ptr - ip < 17)
-          ban_ip(ip); //ban
+
+      if(*ptr < ' ') goto nextLine;
+
+      char *ip = ptr;
+      int octet = 0;
+      while(*ptr >= '.' && *ptr <= '9') { //find end of number / ip str
+        octet += (*ptr == '.');
+        ptr += 1;
       }
+
+      if(*ptr == 0) return; //partial line / fragmented buff
+
+      if(ptr - ip > 6 && ptr - ip < 16 && octet == 3) { //valid ipv4
+        if(*ptr == '\n' && ptr[1] != 0) //ip at EOL but not EOF
+          ptr[1] = '\n';
+        *ptr++ = 0; //term ip str
+        ban_ip(ip); //ban
+      }
+      else goto findNumber;
     }
-    while(*ptr && *ptr != '\n') //next line or EOF
+
+    nextLine: //advance to next line
+    while(*ptr && *ptr != '\n')
       ptr += 1;
-    ptr += (*ptr == '\n'); //next line
+    ptr += (*ptr == '\n');
   }
 }
 
@@ -165,7 +194,7 @@ void* nginx_log(void* x) {
   fd = open(NGINX_PIPE, O_RDONLY);
 
   while(1) {
-    bytesRead = read(fd, nbuff, sizeof(nbuff) - 2);
+    bytesRead = read(fd, nbuff, sizeof(nbuff) - 1);
     if(bytesRead <= 0)
       continue;
     nbuff[bytesRead] = 0;
@@ -187,7 +216,7 @@ void* ssh_log(void* x) {
   fd = open(SSH_PIPE, O_RDONLY);
 
   while(1) {
-    bytesRead = read(fd, sbuff, sizeof(sbuff) - 2);
+    bytesRead = read(fd, sbuff, sizeof(sbuff) - 1);
     if(bytesRead <= 0)
       continue;
     sbuff[bytesRead] = 0;
