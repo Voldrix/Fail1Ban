@@ -91,7 +91,6 @@ server {
 ### ToDo
 - IPv6
 - Unban individual IP
-- Generalize SSH ban triggers
 
 ### License
 [MIT](LICENSE)
