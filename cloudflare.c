@@ -6,9 +6,8 @@
 
 sigset_t signal_mask;
 pthread_t cf_waf_thread;
-unsigned int cfLastIP = 0;
-int cf_ban_req_len, cfQueueHead = 0, cfQueueTail = 0;
-char *cfIPptr, cf_hosts[CF_NUM_HOSTS][64] = CF_HOSTS, cfQueue[CF_QUEUE_SIZE][16] = {0};
+int cf_ban_req_len, cfQueueHead = 0, cfQueueTail = 0, cfLastIPTail = 0;
+char *cfIPptr, cfLastIP[4][16] = {0}, cf_hosts[CF_NUM_HOSTS][64] = CF_HOSTS, cfQueue[CF_QUEUE_SIZE][16] = {0};
 
 char cf_ban_req[512] = "POST /sslrelay/client/v4/accounts/" CF_ACCOUNT_ID "/rules/lists/" CF_LIST_ID "/items HTTP/1.1\r\nHost: " SSL_RELAY_HOSTNAME "\r\nX-Forwarded-For: api.cloudflare.com\r\nuser-agent: Fail1Ban\r\naccept: */*\r\ncontent-type: application/json\r\nx-auth-email: " CF_ACCOUNT_EMAIL "\r\nx-auth-key: " CF_API_KEY "\r\ncontent-length: 26\r\n\r\n[{\"ip\":\"255.255.255.255\"}]";
 
@@ -16,10 +15,14 @@ inline int strIdent(register char*, register char*);
 
 
 void ban_ip_cf(char *ip_str) {
-  unsigned int ip = str_to_ip(ip_str);
-  if(ip != cfLastIP && strIdent(ip_str, "127.0.0.1") && strIdent(ip_str, WHITELIST_MY_IP)) {
-    cfLastIP = ip;
+  for(int i = 0; i < 4; i++) {
+    if(!strIdent(cfLastIP[i], ip_str))
+      return;
+  }
+  if(strIdent(ip_str, "127.0.0.1") && strIdent(ip_str, WHITELIST_MY_IP)) {
+    memcpy(cfLastIP[cfLastIPTail++], ip_str, 16);
     memcpy(cfQueue[cfQueueHead++], ip_str, 16);
+    cfLastIPTail &= 3;
     cfQueueHead &= CF_QUEUE_SIZE - 1;
     if(cfQueueHead - cfQueueTail < 4)
       pthread_kill(cf_waf_thread, SIGCONT);
