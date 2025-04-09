@@ -23,7 +23,7 @@ cat /proc/fail1ban
 Accepts logs directly from OpenSSH and Nginx via two named pipes (fifo), `/run/fail1ban-nginx` and `/run/fail1ban-ssh`
 
 __OpenSSH:__\
-One failure bans immediately.
+One failure bans immediately. (don't worry, your IP is whitelisted)
 
 __Nginx:__\
 By default, there are 4 rules:\
@@ -31,7 +31,8 @@ HTTP 400 and 444 ban immediately.\
 301 and 404 issue two (silent) warnings before banning on the third attempt.
 
 Only the last 16 warnings are remembered.\
-These rules are very simple, and easy for you to add your own custom tailored to your web logs.
+These rules are very simple, and easy for you to add your own custom tailored to your web logs.\
+You may want to omit API responses from these logs to prevent false positives.
 
 ## Configs
 ### Nginx config
@@ -63,6 +64,7 @@ The Cloudflare log parser works with a mixture of domains both on and off of Clo
 
 __Requirements__\
 SSL relay.\
+Configure Nginx to log X-Forwarded-For header as source IP instead of CF's IP.\
 Cloudflare [list](https://developers.cloudflare.com/waf/tools/lists/custom-lists/). Block the list in the WAF.
 
 __Setup__\
@@ -72,12 +74,17 @@ Set `config.local.h` macros for:\
 Your SSL relay hostname, Cloudflare account ID, list ID, account email, api key, and domain names on Cloudflare.\
 Build: `make cf`
 
+Nginx X-Forwarded-For as source IP in logs (only on CF domains)
+```
+server {
+  set_real_ip_from 0.0.0.0/0;
+  real_ip_header X-Forwarded-For;
+}
+```
 Nginx SSL relay:
 ```
 server {
   merge_slashes off;
-  set_real_ip_from 0.0.0.0/0;
-  real_ip_header X-Forwarded-For;
 
   location ~ ^/sslrelay/(.*) {
     resolver 1.0.0.1;
