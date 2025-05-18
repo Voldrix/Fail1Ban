@@ -1,7 +1,9 @@
+#include <stdlib.h> //atoi, exit
 #include <unistd.h>
 #include <fcntl.h> //open
 #include <sys/stat.h> //mkfifo
 #include <pthread.h>
+#include <signal.h>
 #include <string.h>
 #include "ip_str_convert.c"
 
@@ -188,10 +190,24 @@ void ssh_fw(void) {
 
 void* nginx_log(void* x) {
   int fd, bytesRead;
+  char nPidBuff[16];
 
+  unlink(NGINX_PIPE); //on load, nginx creates log pipes as regular files if it does not already exist
   mkfifo(NGINX_PIPE, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   chmod( NGINX_PIPE, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-  fd = open(NGINX_PIPE, O_RDONLY);
+
+  //tell nginx to reopen log files, to use new pipe
+  fd = open("/run/nginx.pid", O_RDONLY);
+  if(fd > 1) {
+    bytesRead = read(fd, nPidBuff, sizeof(nPidBuff) - 1);
+    close(fd);
+    if(bytesRead > 1) {
+      kill(atoi(nPidBuff), SIGUSR1);
+    }
+  }
+
+  fd = open(NGINX_PIPE, O_RDONLY); //would hang until nginx released old fd
+  if(fd < 1) exit(2);
 
   while(1) {
     bytesRead = read(fd, nbuff, sizeof(nbuff) - 1);
@@ -202,7 +218,6 @@ void* nginx_log(void* x) {
     nginx_fw();
   }
 
-  close(fd);
   return 0;
 }
 
@@ -214,6 +229,7 @@ void* ssh_log(void* x) {
   mkfifo(SSH_PIPE, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   chmod( SSH_PIPE, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   fd = open(SSH_PIPE, O_RDONLY);
+  if(fd < 1) exit(3);
 
   while(1) {
     bytesRead = read(fd, sbuff, sizeof(sbuff) - 1);
@@ -224,10 +240,8 @@ void* ssh_log(void* x) {
     ssh_fw();
   }
 
-  close(fd);
   return 0;
 }
-
 
 
 int main(void) {

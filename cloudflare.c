@@ -2,7 +2,6 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#include <signal.h>
 
 sigset_t signal_mask;
 pthread_t cf_waf_thread;
